@@ -1,13 +1,14 @@
+import math
 from typing import List
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from starlette import status
 
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
 from app.models import Ticket
-from app.schemas import TicketCreate, TicketResponse, TicketUpdate
+from app.schemas import TicketCreate, TicketListResponse, TicketResponse, TicketUpdate
 
 Base.metadata.create_all(bind=engine)
 
@@ -82,20 +83,24 @@ def create_ticket(ticket: TicketCreate, db: Session = Depends(get_db)):
     return new_ticket
 
 
-@app.get("/tickets", response_model=List[TicketResponse])
+@app.get("/tickets", response_model=TicketListResponse)
 def list_tickets(
-    status: str | None = None,
+    status_filter: str | None = None,
     priority: str | None = None,
     category: str | None = None,
     assigned_to: str | None = None,
     search: str | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=100),
+    sort_by: str = Query(default="created_at"),
+    sort_order: str = Query(default="desc"),
     db: Session = Depends(get_db),
 ):
     query = db.query(Ticket)
 
-    if status:
-        validate_status(status)
-        query = query.filter(Ticket.status == status)
+    if status_filter:
+        validate_status(status_filter)
+        query = query.filter(Ticket.status == status_filter)
 
     if priority:
         validate_priority(priority)
@@ -116,8 +121,50 @@ def list_tickets(
             | Ticket.assigned_to.ilike(search_pattern)
         )
 
-    tickets = query.order_by(Ticket.created_at.desc()).all()
-    return tickets
+    allowed_sort_fields = {
+        "id": Ticket.id,
+        "title": Ticket.title,
+        "category": Ticket.category,
+        "priority": Ticket.priority,
+        "status": Ticket.status,
+        "assigned_to": Ticket.assigned_to,
+        "created_at": Ticket.created_at,
+        "updated_at": Ticket.updated_at,
+    }
+
+    if sort_by not in allowed_sort_fields:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid sort_by. Must be one of: {sorted(allowed_sort_fields.keys())}",
+        )
+
+    if sort_order not in {"asc", "desc"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid sort_order. Must be either 'asc' or 'desc'",
+        )
+
+    sort_column = allowed_sort_fields[sort_by]
+
+    if sort_order == "desc":
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
+
+    total = query.count()
+    total_pages = math.ceil(total / page_size) if total > 0 else 0
+
+    offset = (page - 1) * page_size
+
+    tickets = query.offset(offset).limit(page_size).all()
+
+    return {
+        "items": tickets,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+    }
 
 
 @app.get("/tickets/{ticket_id}", response_model=TicketResponse)

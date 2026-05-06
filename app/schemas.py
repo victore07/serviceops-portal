@@ -34,3 +34,11 @@ class TicketResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class TicketListResponse(BaseModel):
+    items: list[TicketResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
