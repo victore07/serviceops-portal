@@ -12,6 +12,15 @@ class TicketCreate(BaseModel):
     assigned_to: Optional[str] = None
 
 
+class TicketUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=3, max_length=200)
+    description: Optional[str] = Field(default=None, min_length=5)
+    category: Optional[str] = Field(default=None, min_length=2, max_length=100)
+    priority: Optional[str] = None
+    status: Optional[str] = None
+    assigned_to: Optional[str] = None
+
+
 class TicketResponse(BaseModel):
     id: int
     title: str
