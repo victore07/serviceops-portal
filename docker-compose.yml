@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: serviceops_db
+    environment:
+      POSTGRES_USER: serviceops
+      POSTGRES_PASSWORD: serviceops
+      POSTGRES_DB: serviceops
+    ports:
+      - "5432:5432"
+    volumes:
+      - serviceops_pgdata:/var/lib/postgresql/data
+
+volumes:
+  serviceops_pgdata:
