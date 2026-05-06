@@ -42,3 +42,33 @@ class TicketListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class TicketCommentCreate(BaseModel):
+    author: str = Field(..., min_length=2, max_length=100)
+    body: str = Field(..., min_length=2)
+
+
+class TicketCommentResponse(BaseModel):
+    id: int
+    ticket_id: int
+    author: str
+    body: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TicketAuditLogResponse(BaseModel):
+    id: int
+    ticket_id: int
+    action: str
+    field_name: Optional[str]
+    old_value: Optional[str]
+    new_value: Optional[str]
+    actor: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -7,8 +7,16 @@ from starlette import status
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
-from app.models import Ticket
-from app.schemas import TicketCreate, TicketListResponse, TicketResponse, TicketUpdate
+from app.models import Ticket, TicketAuditLog, TicketComment
+from app.schemas import (
+    TicketAuditLogResponse,
+    TicketCommentCreate,
+    TicketCommentResponse,
+    TicketCreate,
+    TicketListResponse,
+    TicketResponse,
+    TicketUpdate,
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -50,6 +58,27 @@ def get_ticket_or_404(ticket_id: int, db: Session):
     return ticket
 
 
+def create_audit_log(
+    db: Session,
+    ticket_id: int,
+    action: str,
+    actor: str = "system",
+    field_name: str | None = None,
+    old_value: str | None = None,
+    new_value: str | None = None,
+):
+    audit_log = TicketAuditLog(
+        ticket_id=ticket_id,
+        action=action,
+        actor=actor,
+        field_name=field_name,
+        old_value=old_value,
+        new_value=new_value,
+    )
+
+    db.add(audit_log)
+
+
 @app.get("/")
 def root():
     return {"message": "ServiceOps Portal API is running"}
@@ -79,6 +108,16 @@ def create_ticket(ticket: TicketCreate, db: Session = Depends(get_db)):
     db.add(new_ticket)
     db.commit()
     db.refresh(new_ticket)
+
+    create_audit_log(
+        db=db,
+        ticket_id=new_ticket.id,
+        action="created",
+        actor="system",
+        new_value=f"Ticket created with priority '{new_ticket.priority}'",
+    )
+
+    db.commit()
 
     return new_ticket
 
@@ -190,7 +229,20 @@ def update_ticket(
         validate_status(update_data["status"])
 
     for field, value in update_data.items():
-        setattr(ticket, field, value)
+        old_value = getattr(ticket, field)
+
+        if old_value != value:
+            create_audit_log(
+                db=db,
+                ticket_id=ticket.id,
+                action="updated",
+                actor="system",
+                field_name=field,
+                old_value=str(old_value) if old_value is not None else None,
+                new_value=str(value) if value is not None else None,
+            )
+
+            setattr(ticket, field, value)
 
     db.commit()
     db.refresh(ticket)
@@ -202,7 +254,81 @@ def update_ticket(
 def delete_ticket(ticket_id: int, db: Session = Depends(get_db)):
     ticket = get_ticket_or_404(ticket_id, db)
 
+    create_audit_log(
+        db=db,
+        ticket_id=ticket.id,
+        action="deleted",
+        actor="system",
+        old_value=f"Deleted ticket: {ticket.title}",
+    )
+
     db.delete(ticket)
     db.commit()
 
     return None
+
+
+@app.post(
+    "/tickets/{ticket_id}/comments",
+    response_model=TicketCommentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_ticket_comment(
+    ticket_id: int,
+    comment: TicketCommentCreate,
+    db: Session = Depends(get_db),
+):
+    ticket = get_ticket_or_404(ticket_id, db)
+
+    new_comment = TicketComment(
+        ticket_id=ticket.id,
+        author=comment.author,
+        body=comment.body,
+    )
+
+    db.add(new_comment)
+
+    create_audit_log(
+        db=db,
+        ticket_id=ticket.id,
+        action="commented",
+        actor=comment.author,
+        new_value=comment.body,
+    )
+
+    db.commit()
+    db.refresh(new_comment)
+
+    return new_comment
+
+
+@app.get(
+    "/tickets/{ticket_id}/comments",
+    response_model=list[TicketCommentResponse],
+)
+def list_ticket_comments(ticket_id: int, db: Session = Depends(get_db)):
+    ticket = get_ticket_or_404(ticket_id, db)
+
+    comments = (
+        db.query(TicketComment)
+        .filter(TicketComment.ticket_id == ticket.id)
+        .order_by(TicketComment.created_at.asc())
+        .all()
+    )
+
+    return comments
+
+
+@app.get(
+    "/tickets/{ticket_id}/audit-logs",
+    response_model=list[TicketAuditLogResponse],
+)
+def list_ticket_audit_logs(ticket_id: int, db: Session = Depends(get_db)):
+    logs = (
+        db.query(TicketAuditLog)
+        .filter(TicketAuditLog.ticket_id == ticket_id)
+        .order_by(TicketAuditLog.created_at.asc())
+        .all()
+    )
+
+    return logs
