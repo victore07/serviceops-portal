@@ -72,3 +72,27 @@ class TicketAuditLogResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ReportCountItem(BaseModel):
+    label: str
+    count: int
+
+
+class AgentWorkloadItem(BaseModel):
+    assigned_to: str
+    open_count: int
+    in_progress_count: int
+    resolved_count: int
+    total_count: int
+
+
+class ReportSummaryResponse(BaseModel):
+    total_tickets: int
+    open_tickets: int
+    in_progress_tickets: int
+    resolved_tickets: int
+    closed_tickets: int
+    high_priority_tickets: int
+    urgent_tickets: int
+    unassigned_tickets: int

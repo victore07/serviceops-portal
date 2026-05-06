@@ -4,11 +4,15 @@ from typing import List
 from fastapi import Depends, FastAPI, HTTPException, Query
 from starlette import status
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
 from app.models import Ticket, TicketAuditLog, TicketComment
 from app.schemas import (
+    AgentWorkloadItem,
+    ReportCountItem,
+    ReportSummaryResponse,
     TicketAuditLogResponse,
     TicketCommentCreate,
     TicketCommentResponse,
@@ -77,6 +81,23 @@ def create_audit_log(
     )
 
     db.add(audit_log)
+
+
+def get_counts_by_field(db: Session, field):
+    results = (
+        db.query(field, func.count(Ticket.id))
+        .group_by(field)
+        .order_by(func.count(Ticket.id).desc())
+        .all()
+    )
+
+    return [
+        {
+            "label": row[0] if row[0] else "Unassigned",
+            "count": row[1],
+        }
+        for row in results
+    ]
 
 
 @app.get("/")
@@ -332,3 +353,98 @@ def list_ticket_audit_logs(ticket_id: int, db: Session = Depends(get_db)):
     )
 
     return logs
+
+
+@app.get("/reports/summary", response_model=ReportSummaryResponse)
+def get_report_summary(db: Session = Depends(get_db)):
+    total_tickets = db.query(Ticket).count()
+
+    open_tickets = db.query(Ticket).filter(Ticket.status == "open").count()
+    in_progress_tickets = db.query(Ticket).filter(Ticket.status == "in_progress").count()
+    resolved_tickets = db.query(Ticket).filter(Ticket.status == "resolved").count()
+    closed_tickets = db.query(Ticket).filter(Ticket.status == "closed").count()
+
+    high_priority_tickets = db.query(Ticket).filter(Ticket.priority == "high").count()
+    urgent_tickets = db.query(Ticket).filter(Ticket.priority == "urgent").count()
+
+    unassigned_tickets = (
+        db.query(Ticket)
+        .filter((Ticket.assigned_to == None) | (Ticket.assigned_to == ""))
+        .count()
+    )
+
+    return {
+        "total_tickets": total_tickets,
+        "open_tickets": open_tickets,
+        "in_progress_tickets": in_progress_tickets,
+        "resolved_tickets": resolved_tickets,
+        "closed_tickets": closed_tickets,
+        "high_priority_tickets": high_priority_tickets,
+        "urgent_tickets": urgent_tickets,
+        "unassigned_tickets": unassigned_tickets,
+    }
+
+
+@app.get("/reports/tickets-by-status", response_model=list[ReportCountItem])
+def get_tickets_by_status(db: Session = Depends(get_db)):
+    return get_counts_by_field(db, Ticket.status)
+
+
+@app.get("/reports/tickets-by-priority", response_model=list[ReportCountItem])
+def get_tickets_by_priority(db: Session = Depends(get_db)):
+    return get_counts_by_field(db, Ticket.priority)
+
+
+@app.get("/reports/tickets-by-category", response_model=list[ReportCountItem])
+def get_tickets_by_category(db: Session = Depends(get_db)):
+    return get_counts_by_field(db, Ticket.category)
+
+
+@app.get("/reports/agent-workload", response_model=list[AgentWorkloadItem])
+def get_agent_workload(db: Session = Depends(get_db)):
+    assigned_agents = (
+        db.query(Ticket.assigned_to)
+        .filter(Ticket.assigned_to != None)
+        .filter(Ticket.assigned_to != "")
+        .group_by(Ticket.assigned_to)
+        .all()
+    )
+
+    workload = []
+
+    for agent_row in assigned_agents:
+        agent = agent_row[0]
+
+        open_count = (
+            db.query(Ticket)
+            .filter(Ticket.assigned_to == agent, Ticket.status == "open")
+            .count()
+        )
+
+        in_progress_count = (
+            db.query(Ticket)
+            .filter(Ticket.assigned_to == agent, Ticket.status == "in_progress")
+            .count()
+        )
+
+        resolved_count = (
+            db.query(Ticket)
+            .filter(Ticket.assigned_to == agent, Ticket.status == "resolved")
+            .count()
+        )
+
+        total_count = db.query(Ticket).filter(Ticket.assigned_to == agent).count()
+
+        workload.append(
+            {
+                "assigned_to": agent,
+                "open_count": open_count,
+                "in_progress_count": in_progress_count,
+                "resolved_count": resolved_count,
+                "total_count": total_count,
+            }
+        )
+
+    workload.sort(key=lambda item: item["total_count"], reverse=True)
+
+    return workload
