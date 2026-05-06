@@ -1,6 +1,8 @@
 from typing import List
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException
+from starlette import status
+
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
@@ -81,8 +83,40 @@ def create_ticket(ticket: TicketCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/tickets", response_model=List[TicketResponse])
-def list_tickets(db: Session = Depends(get_db)):
-    tickets = db.query(Ticket).order_by(Ticket.created_at.desc()).all()
+def list_tickets(
+    status: str | None = None,
+    priority: str | None = None,
+    category: str | None = None,
+    assigned_to: str | None = None,
+    search: str | None = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(Ticket)
+
+    if status:
+        validate_status(status)
+        query = query.filter(Ticket.status == status)
+
+    if priority:
+        validate_priority(priority)
+        query = query.filter(Ticket.priority == priority)
+
+    if category:
+        query = query.filter(Ticket.category.ilike(f"%{category}%"))
+
+    if assigned_to:
+        query = query.filter(Ticket.assigned_to.ilike(f"%{assigned_to}%"))
+
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            Ticket.title.ilike(search_pattern)
+            | Ticket.description.ilike(search_pattern)
+            | Ticket.category.ilike(search_pattern)
+            | Ticket.assigned_to.ilike(search_pattern)
+        )
+
+    tickets = query.order_by(Ticket.created_at.desc()).all()
     return tickets
 
 
