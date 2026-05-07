@@ -34,3 +34,36 @@ export type TicketCreatePayload = {
   priority: TicketPriority;
   assigned_to?: string;
 };
+
+export type TicketUpdatePayload = Partial<{
+  title: string;
+  description: string;
+  category: string;
+  priority: TicketPriority;
+  status: TicketStatus;
+  assigned_to: string | null;
+}>;
+
+export type TicketComment = {
+  id: number;
+  ticket_id: number;
+  author: string;
+  body: string;
+  created_at: string;
+};
+
+export type TicketCommentCreatePayload = {
+  author: string;
+  body: string;
+};
+
+export type TicketAuditLog = {
+  id: number;
+  ticket_id: number;
+  action: string;
+  field_name: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  actor: string;
+  created_at: string;
+};

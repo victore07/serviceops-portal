@@ -224,3 +224,110 @@ form.panel {
     grid-template-columns: 1fr;
   }
 }
+
+a {
+  color: #1f5eff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: stretch;
+  margin-bottom: 1.5rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-weight: 800;
+}
+
+.status-text {
+  font-size: 1.5rem;
+  text-transform: capitalize;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.detail-list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+}
+
+.detail-list div {
+  border-bottom: 1px solid #dde5ef;
+  padding-bottom: 0.75rem;
+}
+
+.detail-list dt {
+  color: #697586;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
+
+.detail-list dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.comment-form {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.timeline {
+  display: grid;
+  gap: 1rem;
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  background: #1f5eff;
+  border-radius: 999px;
+  margin-top: 0.35rem;
+}
+
+.timeline-item strong {
+  display: block;
+}
+
+.timeline-item span,
+.timeline-item small {
+  color: #697586;
+  font-size: 0.85rem;
+}
+
+.timeline-item p {
+  margin: 0.4rem 0 0.25rem;
+  color: #435064;
+}
+
+@media (max-width: 900px) {
+  .detail-header,
+  .detail-grid {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+}
