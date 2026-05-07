@@ -85,21 +85,27 @@ export function TicketsPage() {
 
   return (
     <>
-      <section className="hero">
+        <section className="hero">
         <div>
-          <p className="eyebrow">ServiceOps Portal</p>
-          <h1>Ticket Operations Dashboard</h1>
-          <p className="hero-text">
+            <p className="eyebrow">ServiceOps Portal</p>
+            <h1>Ticket Operations Dashboard</h1>
+            <p className="hero-text">
             Track support tickets, priorities, assignment, and operational
             workload from one internal dashboard.
-          </p>
+            </p>
         </div>
 
-        <div className="metric-card">
-          <span>Total Tickets</span>
-          <strong>{total}</strong>
+        <div className="hero-side">
+            <Link className="secondary-button" to="/dashboard">
+            View Dashboard
+            </Link>
+
+            <div className="metric-card">
+            <span>Total Tickets</span>
+            <strong>{total}</strong>
+            </div>
         </div>
-      </section>
+        </section>
 
       {error && <div className="error-box">{error}</div>}
 

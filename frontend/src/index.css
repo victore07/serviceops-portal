@@ -331,3 +331,129 @@ a:hover {
     display: grid;
   }
 }
+
+.hero-side {
+  display: grid;
+  gap: 1rem;
+  min-width: 190px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ccd5e1;
+  border-radius: 10px;
+  background: white;
+  color: #1f5eff;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.secondary-button:hover {
+  text-decoration: none;
+  background: #f8fafc;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-card {
+  min-width: 0;
+}
+
+.dashboard-card strong {
+  font-size: 2.5rem;
+}
+
+.risk-card {
+  border-color: #fecaca;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.bar-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.bar-row {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.bar-row-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.bar-row-header strong {
+  text-transform: capitalize;
+}
+
+.bar-track {
+  height: 12px;
+  background: #eef2f7;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: #1f5eff;
+  border-radius: 999px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid #dde5ef;
+  text-align: left;
+  padding: 0.85rem;
+  white-space: nowrap;
+}
+
+th {
+  color: #697586;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 900px) {
+  .kpi-grid,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header-actions {
+    flex-direction: column;
+  }
+}
