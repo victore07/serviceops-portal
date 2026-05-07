@@ -6,6 +6,7 @@ from starlette import status
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine, get_db
 from app.models import Ticket, TicketAuditLog, TicketComment
@@ -28,6 +29,17 @@ app = FastAPI(
     title="ServiceOps Portal API",
     description="A ticketing and operations dashboard backend.",
     version="0.2.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 VALID_PRIORITIES = {"low", "medium", "high", "urgent"}
